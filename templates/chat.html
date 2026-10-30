@@ -1,389 +1,185 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>چت زنده + فایل</title>
-    <style>
-        * { box-sizing: border-box; font-family: Tahoma, sans-serif; }
-        body { background: #f0f4f8; margin: 0; padding: 10px; }
-        .container { max-width: 520px; margin: 0 auto; background: white; border-radius: 16px; box-shadow: 0 8px 25px rgba(0,0,0,0.08); overflow: hidden; height: 96vh; display: flex; flex-direction: column; }
-        .header { background: #1e40af; color: white; padding: 14px; text-align: center; }
-        .messages { flex: 1; overflow-y: auto; padding: 15px; background: #f8fafc; }
-        .message { margin-bottom: 12px; padding: 10px 14px; border-radius: 12px; max-width: 85%; word-wrap: break-word; }
-        .message.me { background: #dcfce7; margin-right: auto; }
-        .message.other { background: #e0f2fe; margin-left: auto; }
-        .sender { font-size: 12px; font-weight: bold; color: #1e40af; margin-bottom: 4px; }
-        .time { font-size: 11px; color: #64748b; margin-top: 4px; }
-        .input-area { display: flex; gap: 8px; padding: 12px; border-top: 1px solid #e2e8f0; align-items: center; }
-        .input-area input[type="text"] { flex: 1; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 15px; }
-        .input-area button, .file-btn { padding: 12px 14px; background: #10b981; color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; }
-        .file-btn { background: #3b82f6; }
-        .name-box { padding: 20px; text-align: center; }
-        .name-box input { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; }
-        .name-box button { width: 100%; padding: 13px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
-        .status { font-size: 12px; margin-top: 6px; }
-        .online { color: #4ade80; }
-        .offline { color: #f87171; }
-        .file-msg { background: #fef3c7 !important; border: 1px solid #f59e0b; }
-        .progress-bar { height: 8px; background: #e2e8f0; border-radius: 4px; margin-top: 8px; overflow: hidden; }
-        .progress-fill { height: 100%; background: #10b981; width: 0%; transition: width 0.2s; }
-        .file-actions button { margin-top: 6px; padding: 6px 12px; font-size: 13px; background: #1e40af; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>چت {{ room_code }}</title>
+  <style>
+    body { font-family: Tahoma, sans-serif; margin: 0; background: #0f172a; color: #e2e8f0; height: 100vh; display: flex; flex-direction: column; }
+    header { padding: 12px 16px; background: #1e293b; display: flex; justify-content: space-between; align-items: center; }
+    #messages { flex: 1; overflow-y: auto; padding: 16px; }
+    .msg { margin-bottom: 10px; max-width: 80%; }
+    .msg .meta { font-size: 12px; color: #94a3b8; }
+    .msg .body { background: #334155; padding: 10px 12px; border-radius: 12px; margin-top: 4px; word-break: break-word; }
+    .mine .body { background: #2563eb; }
+    form { display: flex; gap: 8px; padding: 12px; background: #1e293b; }
+    input[type=text] { flex: 1; padding: 12px; border-radius: 8px; border: none; }
+    button { padding: 12px 16px; border: none; border-radius: 8px; background: #3b82f6; color: #fff; cursor: pointer; }
+    #gate { position: fixed; inset: 0; background: #0f172a; display: flex; align-items: center; justify-content: center; }
+    #gate .box { background: #1e293b; padding: 24px; border-radius: 12px; width: min(360px, 90vw); }
+    #gate input { width: 100%; margin: 8px 0; padding: 10px; box-sizing: border-box; border-radius: 8px; border: none; }
+    #gate button { width: 100%; margin-top: 8px; }
+    .err { color: #f87171; font-size: 13px; }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <div id="name-screen" class="name-box">
-            <h2>ورود به چت</h2>
-            <p>کد اتاق: <strong>{{ room_code }}</strong></p>
-            <input type="text" id="username" placeholder="اسمت رو بنویس..." maxlength="20">
-            <button onclick="joinChat()">ورود به چت</button>
-        </div>
-
-        <div id="chat-screen" style="display:none; height:100%; flex-direction:column;">
-            <div class="header">
-                <div>چت زنده + ارسال فایل</div>
-                <div style="font-size:13px;">کد اتاق: {{ room_code }}</div>
-                <div class="status" id="status">در حال اتصال...</div>
-            </div>
-
-            <div class="messages" id="messages"></div>
-
-            <div class="input-area">
-                <input type="file" id="file-input" style="display:none" onchange="sendFile(this.files[0])">
-                <button class="file-btn" onclick="document.getElementById('file-input').click()">📎 فایل</button>
-                <input type="text" id="message-input" placeholder="پیام بنویس..." onkeypress="if(event.key==='Enter') sendMessage()">
-                <button onclick="sendMessage()">ارسال</button>
-            </div>
-        </div>
+  <div id="gate">
+    <div class="box">
+      <h3>ورود به اتاق {{ room_code }}</h3>
+      <p class="err" id="gate-err"></p>
+      <input id="g-name" placeholder="نام نمایشی" />
+      <input id="g-pass" type="password" placeholder="رمز اتاق (کلید رمزنگاری)" />
+      <button type="button" onclick="doJoin()">ورود امن</button>
     </div>
+  </div>
 
-<script>
-const roomCode = "{{ room_code }}";
-let myName = "";
-let ws = null;
+  <header>
+    <strong>اتاق {{ room_code }}</strong>
+    <span id="status">قطع</span>
+  </header>
+  <div id="messages"></div>
+  <form id="send-form" onsubmit="return sendMsg(event)">
+    <input type="text" id="text" placeholder="پیام..." autocomplete="off" />
+    <button type="submit">ارسال</button>
+  </form>
 
-// مدیریت فایل‌های دریافتی
-const incomingFiles = {}; // file_id → {meta, chunks: {}, received: 0}
+  <script>
+    const ROOM = "{{ room_code }}";
+    let token = sessionStorage.getItem("token_" + ROOM);
+    let password = sessionStorage.getItem("room_password_" + ROOM);
+    let sender = sessionStorage.getItem("sender_" + ROOM);
+    let cryptoKey = null;
+    let ws = null;
 
-const CHUNK_SIZE = 16 * 1024; // 16KB
-
-function joinChat() {
-    const name = document.getElementById("username").value.trim();
-    if (!name) return alert("اسم وارد کن");
-    myName = name;
-
-    document.getElementById("name-screen").style.display = "none";
-    document.getElementById("chat-screen").style.display = "flex";
-
-    loadOldMessages();
-    connectWebSocket();
-}
-
-function connectWebSocket() {
-    const protocol = location.protocol === "https:" ? "wss:" : "ws:";
-    ws = new WebSocket(`${protocol}//${location.host}/ws/${roomCode}`);
-
-    ws.onopen = () => {
-        document.getElementById("status").innerHTML = '<span class="online">● آنلاین</span>';
-    };
-    ws.onclose = () => {
-        document.getElementById("status").innerHTML = '<span class="offline">● قطع شد - تلاش مجدد...</span>';
-        setTimeout(connectWebSocket, 2000);
-    };
-    ws.onmessage = (e) => handleMessage(JSON.parse(e.data));
-}
-
-function handleMessage(msg) {
-    if (msg.type === "chat") {
-        addChatMessage(msg.sender, msg.content, msg.time, msg.sender === myName);
+    function bufToB64(buf) {
+      return btoa(String.fromCharCode(...new Uint8Array(buf)));
     }
-    else if (msg.type === "file_start") {
-        handleFileStart(msg);
+    function b64ToBuf(b64) {
+      const s = atob(b64);
+      const u = new Uint8Array(s.length);
+      for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i);
+      return u.buffer;
     }
-    else if (msg.type === "file_chunk") {
-        handleFileChunk(msg);
+
+    async function deriveKey(pass) {
+      const enc = new TextEncoder();
+      const base = await crypto.subtle.importKey("raw", enc.encode(pass), "PBKDF2", false, ["deriveKey"]);
+      // salt ثابت وابسته به room — برای اتاق‌های واقعی بهتر است salt روی سرور ذخیره شود
+      const salt = enc.encode("chatroom-salt-" + ROOM);
+      return crypto.subtle.deriveKey(
+        { name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" },
+        base,
+        { name: "AES-GCM", length: 256 },
+        false,
+        ["encrypt", "decrypt"]
+      );
     }
-    else if (msg.type === "file_request_chunks") {
-        // اگر ما فرستنده بودیم، تکه‌های درخواست‌شده را دوباره می‌فرستیم
-        if (window.outgoingFiles && window.outgoingFiles[msg.file_id]) {
-            resendChunks(msg.file_id, msg.missing);
+
+    async function encryptText(plain) {
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const ct = await crypto.subtle.encrypt(
+        { name: "AES-GCM", iv },
+        cryptoKey,
+        new TextEncoder().encode(plain)
+      );
+      return { encrypted_content: bufToB64(ct), iv: bufToB64(iv) };
+    }
+
+    async function decryptText(encrypted_content, iv) {
+      try {
+        const pt = await crypto.subtle.decrypt(
+          { name: "AES-GCM", iv: b64ToBuf(iv) },
+          cryptoKey,
+          b64ToBuf(encrypted_content)
+        );
+        return new TextDecoder().decode(pt);
+      } catch {
+        return "[رمزگشایی ناموفق — رمز اشتباه؟]";
+      }
+    }
+
+    function addBubble(who, text, time, mine) {
+      const div = document.createElement("div");
+      div.className = "msg" + (mine ? " mine" : "");
+      div.innerHTML = `<div class="meta">${who} · ${time || ""}</div><div class="body"></div>`;
+      div.querySelector(".body").textContent = text;
+      document.getElementById("messages").appendChild(div);
+      div.scrollIntoView({ behavior: "smooth" });
+    }
+
+    async function doJoin() {
+      const name = document.getElementById("g-name").value.trim() || "ناشناس";
+      const pass = document.getElementById("g-pass").value;
+      const err = document.getElementById("gate-err");
+      err.textContent = "";
+      if (!pass || pass.length < 8) { err.textContent = "رمز حداقل ۸ کاراکتر"; return; }
+      const fd = new FormData();
+      fd.append("room_code", ROOM);
+      fd.append("password", pass);
+      fd.append("sender", name);
+      const res = await fetch("/api/join-room", { method: "POST", body: fd });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { err.textContent = data.detail || "خطا"; return; }
+      token = data.access_token;
+      password = pass;
+      sender = data.sender;
+      sessionStorage.setItem("token_" + ROOM, token);
+      sessionStorage.setItem("room_password_" + ROOM, password);
+      sessionStorage.setItem("sender_" + ROOM, sender);
+      await startChat();
+    }
+
+    async function loadHistory() {
+      const res = await fetch("/api/messages/" + ROOM, {
+        headers: { Authorization: "Bearer " + token },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      for (const m of data.messages) {
+        const text = await decryptText(m.encrypted_content, m.iv);
+        addBubble(m.sender, text, m.created_at, m.sender === sender);
+      }
+    }
+
+    function connectWs() {
+      const proto = location.protocol === "https:" ? "wss" : "ws";
+      ws = new WebSocket(`${proto}://${location.host}/ws/${ROOM}?token=${encodeURIComponent(token)}`);
+      ws.onopen = () => { document.getElementById("status").textContent = "متصل"; };
+      ws.onclose = () => { document.getElementById("status").textContent = "قطع"; setTimeout(connectWs, 2000); };
+      ws.onmessage = async (ev) => {
+        const msg = JSON.parse(ev.data);
+        if (msg.type === "chat") {
+          const text = await decryptText(msg.encrypted_content, msg.iv);
+          addBubble(msg.sender, text, msg.time, msg.sender === sender);
         }
-    }
-    else if (msg.type === "file_end") {
-        // اختیاری
-    }
-}
-
-function addChatMessage(sender, content, time, isMe) {
-    const div = document.createElement("div");
-    div.className = "message " + (isMe ? "me" : "other");
-    div.innerHTML = `<div class="sender">${sender}</div><div>${content}</div><div class="time">${time}</div>`;
-    document.getElementById("messages").appendChild(div);
-    scrollBottom();
-}
-
-function scrollBottom() {
-    const c = document.getElementById("messages");
-    c.scrollTop = c.scrollHeight;
-}
-
-async function loadOldMessages() {
-    try {
-        const res = await fetch(`/api/messages/${roomCode}`);
-        const data = await res.json();
-        data.messages.forEach(m => addChatMessage(m.sender, m.encrypted_content, m.created_at, m.sender === myName));
-    } catch(e) {}
-}
-
-function sendMessage() {
-    const input = document.getElementById("message-input");
-    const text = input.value.trim();
-    if (!text || !ws || ws.readyState !== 1) return;
-
-    ws.send(JSON.stringify({
-        type: "chat",
-        sender: myName,
-        content: text
-    }));
-    input.value = "";
-}
-
-// ==================== ارسال فایل با قابلیت بازیابی ====================
-async function sendFile(file) {
-    if (!file || !ws || ws.readyState !== 1) return;
-    if (file.size > 15 * 1024 * 1024) { // محدودیت ۱۵ مگ
-        alert("حداکثر حجم فایل ۱۵ مگابایت است");
-        return;
+      };
     }
 
-    const fileId = crypto.randomUUID();
-    const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-    const sha256 = await computeSHA256(file);
-
-    // ذخیره برای ارسال مجدد احتمالی
-    if (!window.outgoingFiles) window.outgoingFiles = {};
-    window.outgoingFiles[fileId] = { file, totalChunks, sha256 };
-
-    // پیام شروع
-    ws.send(JSON.stringify({
-        type: "file_start",
-        file_id: fileId,
-        filename: file.name,
-        size: file.size,
-        total_chunks: totalChunks,
-        sha256: sha256,
-        sender: myName,
-        time: new Date().toLocaleTimeString("fa-IR", {hour:"2-digit", minute:"2-digit"})
-    }));
-
-    // ارسال تکه‌ها
-    for (let i = 0; i < totalChunks; i++) {
-        const start = i * CHUNK_SIZE;
-        const end = Math.min(start + CHUNK_SIZE, file.size);
-        const blob = file.slice(start, end);
-        const buffer = await blob.arrayBuffer();
-        const base64 = arrayBufferToBase64(buffer);
-        const crc = simpleCRC(base64);
-
-        ws.send(JSON.stringify({
-            type: "file_chunk",
-            file_id: fileId,
-            index: i,
-            data: base64,
-            crc: crc
-        }));
-
-        // کمی تأخیر برای جلوگیری از فشار زیاد
-        if (i % 5 === 0) await sleep(20);
+    async function startChat() {
+      cryptoKey = await deriveKey(password);
+      document.getElementById("gate").style.display = "none";
+      await loadHistory();
+      connectWs();
     }
 
-    ws.send(JSON.stringify({
-        type: "file_end",
-        file_id: fileId
-    }));
-
-    // نمایش در چت خودمان
-    showFileMessage(myName, file.name, file.size, fileId, true, 100);
-}
-
-function resendChunks(fileId, missingIndexes) {
-    const info = window.outgoingFiles[fileId];
-    if (!info) return;
-
-    missingIndexes.forEach(async (i) => {
-        const start = i * CHUNK_SIZE;
-        const end = Math.min(start + CHUNK_SIZE, info.file.size);
-        const blob = info.file.slice(start, end);
-        const buffer = await blob.arrayBuffer();
-        const base64 = arrayBufferToBase64(buffer);
-        const crc = simpleCRC(base64);
-
-        ws.send(JSON.stringify({
-            type: "file_chunk",
-            file_id: fileId,
-            index: i,
-            data: base64,
-            crc: crc
-        }));
-    });
-}
-
-// ==================== دریافت فایل ====================
-function handleFileStart(msg) {
-    if (msg.sender === myName) return; // خودمان
-
-    incomingFiles[msg.file_id] = {
-        meta: msg,
-        chunks: {},
-        received: 0,
-        progressDiv: null
-    };
-
-    showFileMessage(msg.sender, msg.filename, msg.size, msg.file_id, false, 0);
-}
-
-function handleFileChunk(msg) {
-    const f = incomingFiles[msg.file_id];
-    if (!f) return;
-
-    // چک کردن CRC تکه
-    if (simpleCRC(msg.data) !== msg.crc) {
-        // تکه خراب → درخواست مجدد
-        requestMissing(msg.file_id, [msg.index]);
-        return;
+    async function sendMsg(e) {
+      e.preventDefault();
+      const input = document.getElementById("text");
+      const plain = input.value.trim();
+      if (!plain || !ws || ws.readyState !== 1) return;
+      const { encrypted_content, iv } = await encryptText(plain);
+      ws.send(JSON.stringify({ type: "chat", encrypted_content, iv }));
+      input.value = "";
+      return false;
     }
 
-    if (!f.chunks[msg.index]) {
-        f.chunks[msg.index] = msg.data;
-        f.received++;
-        updateFileProgress(msg.file_id, Math.round((f.received / f.meta.total_chunks) * 100));
-    }
-
-    // اگر همه تکه‌ها رسیدن
-    if (f.received === f.meta.total_chunks) {
-        finalizeFile(msg.file_id);
-    } else {
-        // بعد از مدتی تکه‌های گم‌شده را درخواست کن
-        clearTimeout(f.checkTimer);
-        f.checkTimer = setTimeout(() => checkMissingChunks(msg.file_id), 1500);
-    }
-}
-
-function checkMissingChunks(fileId) {
-    const f = incomingFiles[fileId];
-    if (!f || f.received === f.meta.total_chunks) return;
-
-    const missing = [];
-    for (let i = 0; i < f.meta.total_chunks; i++) {
-        if (!f.chunks[i]) missing.push(i);
-    }
-    if (missing.length > 0) {
-        requestMissing(fileId, missing);
-    }
-}
-
-function requestMissing(fileId, missing) {
-    ws.send(JSON.stringify({
-        type: "file_request_chunks",
-        file_id: fileId,
-        missing: missing
-    }));
-}
-
-async function finalizeFile(fileId) {
-    const f = incomingFiles[fileId];
-    if (!f) return;
-
-    // ساخت فایل از تکه‌ها
-    const parts = [];
-    for (let i = 0; i < f.meta.total_chunks; i++) {
-        const bin = base64ToArrayBuffer(f.chunks[i]);
-        parts.push(bin);
-    }
-    const blob = new Blob(parts);
-    const hash = await computeSHA256(blob);
-
-    if (hash !== f.meta.sha256) {
-        updateFileProgress(fileId, -1); // خطا
-        alert("فایل آسیب دیده و قابل بازیابی کامل نبود. دوباره ارسال شود.");
-        return;
-    }
-
-    // موفق
-    const url = URL.createObjectURL(blob);
-    const div = document.getElementById("file-" + fileId);
-    if (div) {
-        div.querySelector(".file-actions").innerHTML = `
-            <a href="${url}" download="${f.meta.filename}">
-                <button>دانلود فایل</button>
-            </a>
-            <div style="font-size:12px;color:green;margin-top:4px;">✓ فایل سالم دریافت شد</div>
-        `;
-        updateFileProgress(fileId, 100);
-    }
-}
-
-function showFileMessage(sender, filename, size, fileId, isMe, progress) {
-    const div = document.createElement("div");
-    div.className = "message file-msg " + (isMe ? "me" : "other");
-    div.id = "file-" + fileId;
-    div.innerHTML = `
-        <div class="sender">${sender}</div>
-        <div>📎 ${filename}</div>
-        <div style="font-size:12px;">${(size/1024).toFixed(1)} KB</div>
-        <div class="progress-bar"><div class="progress-fill" id="prog-${fileId}" style="width:${progress}%"></div></div>
-        <div class="file-actions"></div>
-        <div class="time">${new Date().toLocaleTimeString("fa-IR", {hour:"2-digit", minute:"2-digit"})}</div>
-    `;
-    document.getElementById("messages").appendChild(div);
-    scrollBottom();
-}
-
-function updateFileProgress(fileId, percent) {
-    const el = document.getElementById("prog-" + fileId);
-    if (el) {
-        if (percent < 0) {
-            el.style.background = "#ef4444";
-            el.style.width = "100%";
-        } else {
-            el.style.width = percent + "%";
-        }
-    }
-}
-
-// ==================== توابع کمکی ====================
-function arrayBufferToBase64(buffer) {
-    let binary = "";
-    const bytes = new Uint8Array(buffer);
-    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-    return btoa(binary);
-}
-
-function base64ToArrayBuffer(base64) {
-    const binary = atob(base64);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-    return bytes.buffer;
-}
-
-function simpleCRC(str) {
-    let crc = 0;
-    for (let i = 0; i < str.length; i++) {
-        crc = (crc + str.charCodeAt(i) * (i+1)) % 65535;
-    }
-    return crc.toString(16);
-}
-
-async function computeSHA256(fileOrBlob) {
-    const buffer = await fileOrBlob.arrayBuffer();
-    const hash = await crypto.subtle.digest("SHA-256", buffer);
-    return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2,"0")).join("");
-}
-
-function sleep(ms) {
-    return new Promise(r => setTimeout(r, ms));
-}
-</script>
+    (async function init() {
+      if (token && password) {
+        document.getElementById("g-name").value = sender || "";
+        document.getElementById("g-pass").value = password;
+        try { await startChat(); } catch (e) { console.error(e); }
+      }
+    })();
+  </script>
 </body>
 </html>

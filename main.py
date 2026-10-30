@@ -102,6 +102,30 @@ async def chat_page(request: Request, room_code: str):
         name="chat.html",
         context={"room_code": room_code}
     )
+@app.get("/api/messages/{room_code}/search")
+def search_messages(room_code: str, q: str = "", db: Session = Depends(get_db)):
+    if not q or len(q.strip()) < 2:
+        return {"messages": []}
+
+    cleanup_old_messages(db)
+    
+    query = f"%{q.strip()}%"
+    messages = db.query(Message).filter(
+        Message.room_code == room_code,
+        (Message.encrypted_content.ilike(query)) | (Message.sender.ilike(query))
+    ).order_by(Message.created_at.desc()).limit(50).all()
+
+    return {
+        "messages": [
+            {
+                "sender": m.sender,
+                "encrypted_content": m.encrypted_content,
+                "iv": m.iv,
+                "created_at": m.created_at.strftime("%H:%M")
+            } for m in messages
+        ]
+    }
+
 
 
 class MessageIn(BaseModel):

@@ -1,82 +1,100 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>چت رمزنگاری‌شده</title>
-    <style>
-        body { font-family: Tahoma; background: #f0f4f8; padding: 40px 20px; }
-        .box { max-width: 420px; margin: auto; background: white; padding: 30px; border-radius: 16px; box-shadow: 0 8px 25px rgba(0,0,0,0.08); }
-        h1 { text-align: center; margin-bottom: 25px; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; }
-        button { width: 100%; padding: 13px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
-        .success { background: #dcfce7; padding: 15px; border-radius: 8px; margin-top: 20px; display: none; }
-        .error { background: #fee2e2; color: #b91c1c; padding: 12px; border-radius: 8px; display: none; margin-bottom: 15px; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>چت رمزنگاری‌شده</title>
+  <style>
+    body { font-family: Tahoma, sans-serif; background: #f0f4f8; padding: 40px 20px; }
+    .box { max-width: 440px; margin: auto; background: #fff; padding: 28px; border-radius: 16px; box-shadow: 0 8px 25px rgba(0,0,0,.08); }
+    h1 { text-align: center; margin-bottom: 20px; font-size: 1.4rem; }
+    label { display: block; margin-top: 12px; font-size: 14px; }
+    input { width: 100%; padding: 12px; margin-top: 6px; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+    button { width: 100%; padding: 13px; margin-top: 16px; background: #3b82f6; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; }
+    button.secondary { background: #64748b; }
+    .error { background: #fee2e2; color: #b91c1c; padding: 10px; border-radius: 8px; display: none; margin-bottom: 12px; }
+    .success { background: #dcfce7; padding: 14px; border-radius: 8px; margin-top: 16px; display: none; }
+    .tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+    .tabs button { flex: 1; background: #e2e8f0; color: #334155; }
+    .tabs button.active { background: #3b82f6; color: #fff; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+  </style>
 </head>
 <body>
-    <div class="box">
-        <h1>ساخت اتاق چت</h1>
-
-        <div class="error" id="error-box"></div>
-
-        <label>رمز اتاق (حداقل ۴ کاراکتر)</label>
-        <input type="password" id="password" placeholder="مثلاً 1234">
-        <button onclick="createRoom()">ساخت اتاق چت</button>
-
-        <div class="success" id="success-box">
-            <p><strong>اتاق ساخته شد!</strong></p>
-            <p>کد اتاق: <strong id="room-code"></strong></p>
-            <p>رمز: <strong id="room-pass"></strong></p>
-            <p>
-                <a id="chat-link" href="#">کلیک برای ورود به چت</a>
-            </p>
-            <p style="font-size:13px; color:#666;">این کد و رمز را برای دوستت بفرست</p>
-        </div>
+  <div class="box">
+    <h1>چت رمزنگاری‌شده سرتاسری</h1>
+    <div class="error" id="error"></div>
+    <div class="tabs">
+      <button type="button" class="active" onclick="showTab('create')">ساخت اتاق</button>
+      <button type="button" onclick="showTab('join')">ورود به اتاق</button>
     </div>
 
-    <script>
-        async function createRoom() {
-            const password = document.getElementById("password").value;
-            const errorBox = document.getElementById("error-box");
-            const successBox = document.getElementById("success-box");
+    <div id="create" class="panel active">
+      <label>رمز اتاق (حداقل ۸ کاراکتر — این رمز کلید رمزنگاری است)</label>
+      <input type="password" id="create-pass" placeholder="رمز قوی انتخاب کنید" />
+      <button type="button" onclick="createRoom()">ساخت اتاق</button>
+      <div class="success" id="create-ok">
+        <p>اتاق ساخته شد. کد: <strong id="room-code"></strong></p>
+        <p>رمز را جداگانه برای دوستتان بفرستید. سرور فقط ciphertext می‌بیند.</p>
+        <a id="go-chat" href="#">رفتن به صفحه چت</a>
+      </div>
+    </div>
 
-            errorBox.style.display = "none";
-            successBox.style.display = "none";
+    <div id="join" class="panel">
+      <label>کد اتاق</label>
+      <input id="join-code" placeholder="مثلاً AB12CD" />
+      <label>رمز اتاق</label>
+      <input type="password" id="join-pass" />
+      <label>نام نمایشی</label>
+      <input id="join-name" placeholder="نام شما" />
+      <button type="button" class="secondary" onclick="joinRoom()">ورود</button>
+    </div>
+  </div>
 
-            if (password.length < 4) {
-                errorBox.innerText = "رمز باید حداقل ۴ کاراکتر باشد";
-                errorBox.style.display = "block";
-                return;
-            }
-
-            const formData = new FormData();
-            formData.append("password", password);
-
-            try {
-                const res = await fetch("/api/create-room", {
-                    method: "POST",
-                    body: formData
-                });
-
-                const data = await res.json();
-
-                if (!res.ok) {
-                    errorBox.innerText = data.error || "خطا در ساخت اتاق";
-                    errorBox.style.display = "block";
-                    return;
-                }
-
-                document.getElementById("room-code").innerText = data.room_code;
-                document.getElementById("room-pass").innerText = data.password;
-                document.getElementById("chat-link").href = "/chat/" + data.room_code;
-                successBox.style.display = "block";
-
-            } catch (e) {
-                errorBox.innerText = "خطا در ارتباط با سرور";
-                errorBox.style.display = "block";
-            }
-        }
-    </script>
+  <script>
+    function showTab(id) {
+      document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+      document.querySelectorAll(".tabs button").forEach(b => b.classList.remove("active"));
+      document.getElementById(id).classList.add("active");
+      event.target.classList.add("active");
+    }
+    function showError(msg) {
+      const el = document.getElementById("error");
+      el.textContent = msg;
+      el.style.display = "block";
+    }
+    async function createRoom() {
+      document.getElementById("error").style.display = "none";
+      const password = document.getElementById("create-pass").value;
+      if (password.length < 8) return showError("رمز حداقل ۸ کاراکتر");
+      const fd = new FormData();
+      fd.append("password", password);
+      const res = await fetch("/api/create-room", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) return showError(data.error || "خطا");
+      sessionStorage.setItem("room_password_" + data.room_code, password);
+      document.getElementById("room-code").textContent = data.room_code;
+      document.getElementById("go-chat").href = "/chat/" + data.room_code;
+      document.getElementById("create-ok").style.display = "block";
+    }
+    async function joinRoom() {
+      document.getElementById("error").style.display = "none";
+      const room_code = document.getElementById("join-code").value.trim().toUpperCase();
+      const password = document.getElementById("join-pass").value;
+      const sender = document.getElementById("join-name").value.trim() || "ناشناس";
+      const fd = new FormData();
+      fd.append("room_code", room_code);
+      fd.append("password", password);
+      fd.append("sender", sender);
+      const res = await fetch("/api/join-room", { method: "POST", body: fd });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) return showError(data.detail || "ورود ناموفق");
+      sessionStorage.setItem("token_" + room_code, data.access_token);
+      sessionStorage.setItem("room_password_" + room_code, password);
+      sessionStorage.setItem("sender_" + room_code, data.sender);
+      location.href = "/chat/" + room_code;
+    }
+  </script>
 </body>
 </html>
